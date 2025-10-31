@@ -1,12 +1,12 @@
 """Cart-pole reinforcement learning example using gymnasium."""
 
 import numpy as np
-from numpy.typing import NDArray
 
 from devol import DiffusionConfig, DiffusionEvolution
+from devol.types import FloatArray
 
 
-def create_neural_network(params: NDArray, input_size: int, hidden_size: int, output_size: int):
+def create_neural_network(params: FloatArray, input_size: int, hidden_size: int, output_size: int):
     """Create neural network from parameter vector."""
     idx = 0
     w1_size = input_size * hidden_size
@@ -22,14 +22,14 @@ def create_neural_network(params: NDArray, input_size: int, hidden_size: int, ou
 
     b2 = params[idx : idx + output_size]
 
-    def forward(x: NDArray) -> NDArray:
+    def forward(x: FloatArray) -> FloatArray:
         h = np.maximum(0, x @ w1 + b1)
         return h @ w2 + b2
 
     return forward
 
 
-def evaluate_cartpole(params: NDArray, num_episodes: int = 3) -> float:
+def evaluate_cartpole(params: FloatArray, num_episodes: int = 3) -> float:
     """Evaluate neural network controller on CartPole."""
     try:
         import gymnasium as gym

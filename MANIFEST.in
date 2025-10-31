@@ -1,0 +1,9 @@
+graft src
+prune src/**/__pycache__
+prune data
+prune mnist_checkpoints
+prune examples
+prune tests
+exclude *.gif
+exclude *.png
+exclude uv.lock

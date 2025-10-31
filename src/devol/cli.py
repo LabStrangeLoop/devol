@@ -6,15 +6,21 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
+from pydantic import ValidationError
 from pydantic_yaml import parse_yaml_file_as
 
 from devol.algorithm import DiffusionEvolution
 from devol.config import DiffusionConfig
+from devol.exceptions import ConfigurationError, EvolutionError, FitnessComputationError
 
 
 def load_config(config_path: str) -> DiffusionConfig:
     """Load configuration from YAML file."""
-    return parse_yaml_file_as(DiffusionConfig, Path(config_path))
+    try:
+        return parse_yaml_file_as(DiffusionConfig, Path(config_path))
+    except (OSError, ValidationError, ValueError) as exc:
+        msg = f"Failed to load configuration from {config_path!r}"
+        raise ConfigurationError(msg) from exc
 
 
 def sphere_function(x: np.ndarray) -> float:
@@ -56,8 +62,8 @@ def main() -> None:
 
     try:
         config = load_config(args.config)
-    except Exception as e:
-        print(f"Error loading config: {e}", file=sys.stderr)
+    except ConfigurationError as exc:
+        print(f"Error loading config: {exc}", file=sys.stderr)
         sys.exit(1)
 
     fitness_fn = BUILTIN_FUNCTIONS[args.function]
@@ -66,9 +72,15 @@ def main() -> None:
         print(f"Running Devol with {config.population_size} individuals for {config.num_steps} steps")
 
     algo = DiffusionEvolution(config, fitness_fn)
-    final_population = algo.run()
-
-    best_individual, best_fitness = algo.get_best_individual()
+    try:
+        final_population = algo.run()
+        best_individual, best_fitness = algo.get_best_individual()
+    except FitnessComputationError as exc:
+        print(f"Fitness computation failed: {exc}", file=sys.stderr)
+        sys.exit(1)
+    except EvolutionError as exc:
+        print(f"Evolution failed: {exc}", file=sys.stderr)
+        sys.exit(1)
 
     print(f"\nBest individual: {best_individual}")
     print(f"Best fitness: {best_fitness:.6f}")

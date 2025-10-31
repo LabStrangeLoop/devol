@@ -1,49 +1,116 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
 [project]
 name = "devol"
 version = "0.1.0"
-description = "Diffusion Evolution Algorithm - Evolution through iterative denoising"
+description = "Diffusion Evolution Algorithm — evolution through iterative denoising."
+readme = "README.md"
+license = { text = "MIT" }
 requires-python = ">=3.11"
+authors = [{ name = "Devol Maintainers" }]
+keywords = [
+    "diffusion",
+    "evolution",
+    "optimization",
+    "evolutionary-algorithms",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Typing :: Typed",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
 dependencies = [
-    "gymnasium[classic-control]>=1.2.1",
-    "matplotlib>=3.10.7",
-    "numpy>=1.26.0",
-    "pydantic>=2.0.0",
-    "pydantic-settings>=2.0.0",
-    "pydantic-yaml>=1.6.0",
-    "torch>=2.9.0",
-    "torchvision>=0.24.0",
+    "numpy>=1.26",
+    "pydantic>=2.7,<3",
+    "pydantic-settings>=2.3,<3",
+    "pydantic-yaml>=1.6,<2",
 ]
 
 [project.optional-dependencies]
-dev = [
-    "ruff>=0.1.0",
-    "mypy>=1.7.0",
-    "pytest>=7.0.0",
-]
 examples = [
-    "matplotlib>=3.8.0",
-    "gymnasium>=0.29.0",
+    "matplotlib>=3.8",
+    "gymnasium[classic-control]>=0.29",
+]
+mnist = [
+    "torch>=2.2",
+    "torchvision>=0.17",
+]
+dev = [
+    "coverage>=7.4",
+    "mypy>=1.10",
+    "pyright>=1.1.350",
+    "pytest>=7.4",
+    "pytest-cov>=4.1",
+    "ruff>=0.5",
 ]
 
 [project.scripts]
 devol = "devol.cli:main"
 
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
-
-[tool.hatch.build.targets.wheel]
-packages = ["src/devol", "examples"]
+[project.urls]
+Homepage = "https://github.com/ayeganov/devol"
+Repository = "https://github.com/ayeganov/devol"
+Issues = "https://github.com/ayeganov/devol/issues"
 
 [tool.ruff]
-line-length = 120
+line-length = 100
 target-version = "py311"
+src = ["src", "tests", "examples"]
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "N", "W", "UP"]
+select = ["B", "C4", "E", "F", "I", "N", "NPY", "RUF", "SIM", "TCH", "UP", "W"]
+ignore = ["E203"]
+per-file-ignores = { "examples/*.py" = ["T201"] }
 
 [tool.mypy]
+python_version = "3.11"
 strict = true
 warn_return_any = true
 warn_unused_configs = true
-disallow_untyped_defs = true
+namespace_packages = true
+explicit_package_bases = true
+mypy_path = ["src"]
+disallow_any_generics = true
+warn_unreachable = true
+show_error_codes = true
+
+[[tool.mypy.overrides]]
+module = ["matplotlib.*", "gymnasium.*", "torch.*", "torchvision.*"]
+ignore_missing_imports = true
+
+[tool.pyright]
+pythonVersion = "3.11"
+typeCheckingMode = "strict"
+include = ["src", "tests"]
+exclude = ["examples/mnist/**", "data/**", "mnist_checkpoints/**"]
+reportMissingImports = "warning"
+reportMissingModuleSource = "warning"
+reportUnknownVariableType = "error"
+reportUnknownMemberType = "error"
+reportUnknownArgumentType = "error"
+reportUnknownParameterType = "error"
+
+[[tool.pyright.executionEnvironments]]
+root = "src"
+
+[tool.pytest.ini_options]
+addopts = "-ra --strict-markers --disable-warnings"
+testpaths = ["tests"]
+
+[tool.coverage.run]
+branch = true
+source = ["devol"]
+omit = ["tests/*", "examples/*"]
+
+[tool.coverage.report]
+fail_under = 80
+show_missing = true
+skip_covered = true

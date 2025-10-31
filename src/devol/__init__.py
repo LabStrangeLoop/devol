@@ -10,6 +10,12 @@ from devol.config import (
     ScheduleConfig,
     ScheduleType,
 )
+from devol.exceptions import (
+    ConfigurationError,
+    DevolError,
+    EvolutionError,
+    FitnessComputationError,
+)
 
 __version__ = "0.1.0"
 
@@ -22,4 +28,8 @@ __all__ = [
     "FitnessMapping",
     "ScheduleConfig",
     "ScheduleType",
+    "DevolError",
+    "ConfigurationError",
+    "EvolutionError",
+    "FitnessComputationError",
 ]

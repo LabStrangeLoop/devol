@@ -3,17 +3,19 @@
 from typing import Protocol
 
 import numpy as np
-from numpy.typing import NDArray
+
+from devol.config import FitnessMapping
+from devol.types import FloatArray
 
 
 class FitnessMapper(Protocol):
-    def __call__(self, fitness: NDArray) -> NDArray:
+    def __call__(self, fitness: FloatArray) -> FloatArray:
         """Map fitness values to probability weights."""
         ...
 
 
 class DirectMapper:
-    def __call__(self, fitness: NDArray) -> NDArray:
+    def __call__(self, fitness: FloatArray) -> FloatArray:
         return fitness
 
 
@@ -21,21 +23,21 @@ class ExponentialMapper:
     def __init__(self, temperature: float = 1.0):
         self.temperature = temperature
 
-    def __call__(self, fitness: NDArray) -> NDArray:
+    def __call__(self, fitness: FloatArray) -> FloatArray:
         scaled = fitness / self.temperature
         exp_fitness = np.exp(scaled - np.max(scaled))
         return exp_fitness / np.sum(exp_fitness)
 
 
 class RankMapper:
-    def __call__(self, fitness: NDArray) -> NDArray:
+    def __call__(self, fitness: FloatArray) -> FloatArray:
         ranks = np.argsort(np.argsort(fitness)) + 1
         return ranks / len(ranks)
 
 
 def preprocess_fitness(
-    fitness: NDArray, shift_negative: bool = True, normalize: bool = True
-) -> NDArray:
+    fitness: FloatArray, shift_negative: bool = True, normalize: bool = True
+) -> FloatArray:
     result = fitness.copy()
 
     if shift_negative:
@@ -52,15 +54,24 @@ def preprocess_fitness(
 
 
 def create_fitness_mapper(
-    mapping_type: str, temperature: float = 1.0, normalize: bool = True, shift_negative: bool = True
+    mapping_type: FitnessMapping | str,
+    temperature: float = 1.0,
+    normalize: bool = True,
+    shift_negative: bool = True,
 ) -> tuple[FitnessMapper, bool, bool]:
     mapper: FitnessMapper
-    if mapping_type == "direct":
+
+    if isinstance(mapping_type, FitnessMapping):
+        mapping_key = mapping_type.value
+    else:
+        mapping_key = mapping_type
+
+    if mapping_key == "direct":
         mapper = DirectMapper()
-    elif mapping_type == "exponential":
+    elif mapping_key == "exponential":
         mapper = ExponentialMapper(temperature)
         normalize = False
-    elif mapping_type == "rank":
+    elif mapping_key == "rank":
         mapper = RankMapper()
         normalize = False
     else:

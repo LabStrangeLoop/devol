@@ -3,11 +3,11 @@
 from collections.abc import Callable
 
 import numpy as np
-from numpy.typing import NDArray
 
 from devol import DiffusionConfig, DiffusionEvolution
 from devol.evolution import compute_epsilon_hat, estimate_x0, evolution_step
 from devol.fitness import preprocess_fitness
+from devol.types import FloatArray
 
 from examples.cartpole import evaluate_cartpole
 
@@ -27,9 +27,9 @@ class LiveCartPoleVisualizer:
         self.Normalize = Normalize
         self.ScalarMappable = ScalarMappable
 
-        self.populations: list[NDArray] = []
-        self.embedded_populations: list[NDArray] = []
-        self.fitness_arrays: list[NDArray] = []
+        self.populations: list[FloatArray] = []
+        self.embedded_populations: list[FloatArray] = []
+        self.fitness_arrays: list[FloatArray] = []
         self.fitness_stats: list[dict[str, float]] = []
 
         self.fig, (self.ax_embed, self.ax_fitness) = plt.subplots(1, 2, figsize=(15, 6))
@@ -60,7 +60,7 @@ class LiveCartPoleVisualizer:
 
         plt.tight_layout()
 
-    def record_step(self, population: NDArray, fitness: NDArray) -> None:
+    def record_step(self, population: FloatArray, fitness: FloatArray) -> None:
         """Store population snapshot and fitness values for animation."""
         self.populations.append(population.copy())
         self.fitness_arrays.append(fitness.copy())
@@ -98,7 +98,7 @@ class LiveCartPoleVisualizer:
         if components.shape[1] < 2:
             components = np.pad(components, ((0, 0), (0, 2 - components.shape[1])), mode="constant")
 
-        embeddings: list[NDArray] = []
+        embeddings: list[FloatArray] = []
         for pop in self.populations:
             coords = (pop - mean) @ components
             if coords.shape[1] < 2:
@@ -192,11 +192,16 @@ class LiveCartPoleVisualizer:
 class MonitoredCartPoleEvolution(DiffusionEvolution):
     """Diffusion evolution variant that records progress for visualization."""
 
-    def __init__(self, config: DiffusionConfig, fitness_fn: Callable[[NDArray], float], visualizer: LiveCartPoleVisualizer):
+    def __init__(
+        self,
+        config: DiffusionConfig,
+        fitness_fn: Callable[[FloatArray], float],
+        visualizer: LiveCartPoleVisualizer,
+    ):
         super().__init__(config, fitness_fn)
         self.visualizer = visualizer
 
-    def step(self, t: int, population: NDArray) -> NDArray:
+    def step(self, t: int, population: FloatArray) -> FloatArray:
         raw_fitness = np.array([self.fitness_fn(individual) for individual in population])
         processed_fitness = preprocess_fitness(raw_fitness, self.shift_negative, self.normalize)
         self.fitness_history.append(processed_fitness)
@@ -241,7 +246,7 @@ def run_cartpole_live() -> None:
     )
 
     # Fewer episodes per evaluation keeps the live demo responsive.
-    fitness_fn: Callable[[NDArray], float] = lambda params: evaluate_cartpole(params, num_episodes=1)
+    fitness_fn: Callable[[FloatArray], float] = lambda params: evaluate_cartpole(params, num_episodes=1)
 
     try:
         visualizer = LiveCartPoleVisualizer()

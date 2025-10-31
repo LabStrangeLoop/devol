@@ -3,7 +3,9 @@
 from typing import Protocol
 
 import numpy as np
-from numpy.typing import NDArray
+
+from devol.config import ScheduleType
+from devol.types import FloatArray
 
 
 class Schedule(Protocol):
@@ -34,13 +36,18 @@ class DDPMSchedule:
         return float(np.exp(-beta_0 * t - gamma * t * t / total_steps))
 
 
-def create_alpha_schedule(schedule_type: str, total_steps: int, epsilon: float) -> NDArray:
+def create_alpha_schedule(schedule_type: ScheduleType | str, total_steps: int, epsilon: float) -> FloatArray:
     schedule: Schedule
-    if schedule_type == "linear":
+    if isinstance(schedule_type, ScheduleType):
+        schedule_key = schedule_type.value
+    else:
+        schedule_key = schedule_type
+
+    if schedule_key == "linear":
         schedule = LinearSchedule()
-    elif schedule_type == "cosine":
+    elif schedule_key == "cosine":
         schedule = CosineSchedule()
-    elif schedule_type == "ddpm":
+    elif schedule_key == "ddpm":
         schedule = DDPMSchedule(epsilon)
     else:
         raise ValueError(f"Unknown schedule type: {schedule_type}")
@@ -48,7 +55,7 @@ def create_alpha_schedule(schedule_type: str, total_steps: int, epsilon: float) 
     return np.array([schedule(t, total_steps) for t in range(total_steps + 1)])
 
 
-def create_sigma_schedule(alpha: NDArray, sigma_m: float) -> NDArray:
+def create_sigma_schedule(alpha: FloatArray, sigma_m: float) -> FloatArray:
     sigma = np.zeros(len(alpha))
     for t in range(1, len(alpha)):
         if alpha[t] < alpha[t - 1]:
