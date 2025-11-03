@@ -12,7 +12,6 @@ class ScheduleType(str, Enum):
 
 
 class FitnessMapping(str, Enum):
-    DIRECT = "direct"
     EXPONENTIAL = "exponential"
     RANK = "rank"
 
@@ -29,10 +28,8 @@ class ScheduleConfig(BaseModel, frozen=True):
 
 
 class FitnessConfig(BaseModel, frozen=True):
-    mapping: FitnessMapping = FitnessMapping.DIRECT
+    mapping: FitnessMapping = FitnessMapping.EXPONENTIAL
     temperature: float = Field(default=1.0, gt=0)
-    normalize: bool = True
-    shift_negative: bool = True
 
 
 class DistanceConfig(BaseModel, frozen=True):

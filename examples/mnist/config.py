@@ -44,7 +44,7 @@ def create_default_config(
         param_dim=param_dim,
         sigma_m=sigma_m,
         schedule={"type": "cosine", "epsilon": 1e-4},
-        fitness={"mapping": "direct", "normalize": True, "shift_negative": True},
+        fitness={"mapping": "exponential"},
         distance={"type": "latent", "latent_dim": latent_dim},
         seed=seed,
     )
