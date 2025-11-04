@@ -11,7 +11,6 @@ from tqdm import tqdm
 from benchmark.metrics import (
     BenchmarkMetrics,
     FitnessFunction,
-    calculate_convergence_step,
     calculate_population_diversity,
     evaluate_population_fitness,
 )
@@ -52,7 +51,6 @@ def run_single_experiment(params: dict[str, Any]) -> BenchmarkMetrics:
     best_individual, best_fitness = algo.get_best_individual()
     fitness_values = evaluate_population_fitness(final_pop, fitness_fn)
 
-    convergence_step = calculate_convergence_step(algo.fitness_history)
     final_diversity = calculate_population_diversity(fitness_values)
 
     return BenchmarkMetrics(
@@ -66,7 +64,6 @@ def run_single_experiment(params: dict[str, Any]) -> BenchmarkMetrics:
         mean_fitness=float(np.mean(fitness_values)),
         std_fitness=float(np.std(fitness_values)),
         distance_from_origin=float(np.linalg.norm(best_individual)),
-        convergence_step=convergence_step,
         final_diversity=final_diversity,
         runtime_seconds=runtime,
     )
