@@ -32,11 +32,11 @@ def main():
     runner = GridSearchRunner(
         fitness_fn=rasputin,
         schedule_types=["linear", "cosine", "ddpm"],
-        population_sizes=[50, 100, 250, 500, 1000],
-        num_steps_list=[50, 100, 250, 500, 1000],
-        param_dims=[5, 10, 20, 50, 100],
+        population_sizes=[64, 128, 256],
+        num_steps_list=[64, 128, 256, 512],
+        param_dims=[8, 16, 32, 64],
         sigma_m_values=[0.2, 0.5, 0.8, 1.0],
-        seeds=[42, 666, 1337, 420],
+        seeds=[666, 1337],
     )
 
     # Run experiments
