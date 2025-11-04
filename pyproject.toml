@@ -24,6 +24,11 @@ examples = [
     "matplotlib>=3.8.0",
     "gymnasium>=0.29.0",
 ]
+benchmark = [
+    "matplotlib>=3.8.0",
+    "rich>=13.0.0",
+    "tqdm>=4.65.0",
+]
 
 [project.scripts]
 devol = "devol.cli:main"
