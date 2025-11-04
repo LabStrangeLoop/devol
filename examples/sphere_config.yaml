@@ -9,10 +9,8 @@ schedule:
   epsilon: 0.0001
 
 fitness:
-  mapping: direct
+  mapping: exponential
   temperature: 1.0
-  normalize: true
-  shift_negative: true
 
 distance:
   type: euclidean

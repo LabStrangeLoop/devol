@@ -1,13 +1,14 @@
 """Main Diffusion Evolution algorithm."""
 
-from numpy.typing import NDArray
-from typing import Callable
+from collections.abc import Callable
+
 import numpy as np
+from numpy.typing import NDArray
 
 from devol.config import DiffusionConfig
 from devol.distance import create_distance_computer
 from devol.evolution import compute_epsilon_hat, estimate_x0, evolution_step
-from devol.fitness import create_fitness_mapper, preprocess_fitness
+from devol.fitness import create_fitness_mapper
 from devol.schedules import create_alpha_schedule, create_sigma_schedule
 
 
@@ -29,34 +30,34 @@ class DiffusionEvolution:
             config.seed,
         )
 
-        self.fitness_mapper, self.normalize, self.shift_negative = create_fitness_mapper(
+        self.fitness_mapper = create_fitness_mapper(
             config.fitness.mapping.value,
             config.fitness.temperature,
-            config.fitness.normalize,
-            config.fitness.shift_negative,
         )
 
         self.population: NDArray | None = None
         self.fitness_history: list[NDArray] = []
 
-    def initialize_population(self) -> NDArray:
+    # TODO: Is this init optimal? do we want to abstract it?
+    # Make it a docstring
+    # Explain how the noising op is shifting the original pdf to a ~N(0, 1)
+    def initialize_population(self) -> NDArray:  # TODO: maybe make it of type Population
         self.population = self.rng.standard_normal(
             (self.config.population_size, self.config.param_dim)
         )
         return self.population
 
     def evaluate_fitness(self, population: NDArray) -> NDArray:
-        fitness = np.array([self.fitness_fn(ind) for ind in population])
-        return preprocess_fitness(fitness, self.shift_negative, self.normalize)
+        return np.array([self.fitness_fn(ind) for ind in population])
 
-    def step(self, t: int, population: NDArray) -> NDArray:
+    def step(self, timestamp: int, population: NDArray) -> NDArray:
         fitness = self.evaluate_fitness(population)
         self.fitness_history.append(fitness)
         fitness_weights = self.fitness_mapper(fitness)
 
-        alpha_t = self.alpha[t]
-        alpha_t_minus_1 = self.alpha[t - 1]
-        sigma_t = self.sigma[t]
+        alpha_t = self.alpha[timestamp]
+        alpha_t_minus_1 = self.alpha[timestamp - 1]
+        sigma_t = self.sigma[timestamp]
 
         new_population = np.zeros_like(population)
 
@@ -73,8 +74,8 @@ class DiffusionEvolution:
     def run(self) -> NDArray:
         population = self.initialize_population()
 
-        for t in range(self.config.num_steps, 0, -1):
-            population = self.step(t, population)
+        for timestamp in range(self.config.num_steps, 0, -1):
+            population = self.step(timestamp, population)
 
         self.population = population
         return population

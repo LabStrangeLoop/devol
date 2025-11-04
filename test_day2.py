@@ -3,20 +3,19 @@
 import numpy as np
 
 from devol.distance import create_distance_computer
-from devol.fitness import create_fitness_mapper, preprocess_fitness
+from devol.fitness import create_fitness_mapper
 
 
 def test_fitness_pipeline():
     fitness = np.array([-1.0, 0.5, 2.0, 1.5])
-    preprocessed = preprocess_fitness(fitness, shift_negative=True, normalize=True)
-    print(f"✓ Preprocessed fitness: {preprocessed}")
+    print(f"✓ Raw fitness: {fitness}")
 
-    mapper, _, _ = create_fitness_mapper("exponential", temperature=1.0)
-    weights = mapper(preprocessed)
+    mapper = create_fitness_mapper("exponential", temperature=1.0)
+    weights = mapper(fitness)
     print(f"✓ Exponential weights (sum={weights.sum():.4f}): {weights}")
 
-    rank_mapper, _, _ = create_fitness_mapper("rank")
-    ranks = rank_mapper(preprocessed)
+    rank_mapper = create_fitness_mapper("rank")
+    ranks = rank_mapper(fitness)
     print(f"✓ Rank weights: {ranks}")
 
 
