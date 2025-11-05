@@ -13,16 +13,28 @@ class Schedule(Protocol):
 
 
 class LinearSchedule:
+    """
+    This is following the paper's equation 15 from appendix A.2
+    """
+
     def __call__(self, t: int, total_steps: int) -> float:
         return 1.0 - t / total_steps
 
 
 class CosineSchedule:
+    """
+    This is following the paper's equation 16 from appendix A.2
+    """
+
     def __call__(self, t: int, total_steps: int) -> float:
         return 0.5 * np.cos(np.pi * t / total_steps) + 0.5
 
 
 class DDPMSchedule:
+    """
+    This is following the paper's equation 15 from appendix A.2
+    """
+
     def __init__(self, epsilon: float = 1e-4):
         self.epsilon = epsilon
 
@@ -49,6 +61,9 @@ def create_alpha_schedule(schedule_type: str, total_steps: int, epsilon: float) 
 
 
 def create_sigma_schedule(alpha: NDArray, sigma_m: float) -> NDArray:
+    """
+    This is following the paper's equation 17 from appendix A.2
+    """
     sigma = np.zeros(len(alpha))
     for t in range(1, len(alpha)):
         if alpha[t] < alpha[t - 1]:
