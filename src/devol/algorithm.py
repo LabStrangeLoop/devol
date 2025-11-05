@@ -36,7 +36,6 @@ class DiffusionEvolution:
         )
 
         self.population: NDArray | None = None
-        self.fitness_history: list[NDArray] = []
 
     # TODO: Is this init optimal? do we want to abstract it?
     # Make it a docstring
@@ -52,7 +51,6 @@ class DiffusionEvolution:
 
     def step(self, timestamp: int, population: NDArray) -> NDArray:
         fitness = self.evaluate_fitness(population)
-        self.fitness_history.append(fitness)
         fitness_weights = self.fitness_mapper(fitness)
 
         alpha_t = self.alpha[timestamp]

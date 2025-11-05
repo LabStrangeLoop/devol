@@ -37,7 +37,6 @@ def display_schedule_summary(
     table.add_column("Schedule", style="cyan", no_wrap=True)
     table.add_column("Avg Distance", justify="right", style="green")
     table.add_column("Best Distance", justify="right", style="green")
-    table.add_column("Avg Conv. Step", justify="right", style="yellow")
     table.add_column("Avg Runtime (s)", justify="right", style="magenta")
     table.add_column("Runs", justify="right")
 
@@ -50,14 +49,12 @@ def display_schedule_summary(
 
     for sched, sched_results in sorted(schedules.items()):
         distances = [r.distance_from_origin for r in sched_results]
-        conv_steps = [r.convergence_step for r in sched_results if r.convergence_step]
         runtimes = [r.runtime_seconds for r in sched_results]
 
         table.add_row(
             sched,
             f"{np.mean(distances):.4f} ± {np.std(distances):.4f}",
             f"{np.min(distances):.4f}",
-            f"{np.mean(conv_steps):.1f}" if conv_steps else "N/A",
             f"{np.mean(runtimes):.2f}",
             str(len(sched_results)),
         )
