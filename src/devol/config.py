@@ -1,25 +1,36 @@
 """Configuration models for Diffusion Evolution."""
 
-from enum import Enum
+from enum import StrEnum
 
 from pydantic import BaseModel, Field, field_validator
 
 
-class ScheduleType(str, Enum):
+class ScheduleType(StrEnum):
     LINEAR = "linear"
     COSINE = "cosine"
     DDPM = "ddpm"
 
 
-class FitnessMapping(str, Enum):
+class FitnessMapping(StrEnum):
+    DIRECT = "direct"
+    IDENTITY = "identity"
+    ENERGY = "energy"
     EXPONENTIAL = "exponential"
     RANK = "rank"
 
 
-class DistanceType(str, Enum):
+class DistanceType(StrEnum):
     EUCLIDEAN = "euclidean"
     LATENT = "latent"
     COSINE = "cosine"
+
+
+class NormalType(StrEnum):
+    MAX_SCALE = "max_scale"
+    MIN_MAX = "min_max"
+    Z_SCORE = "z_score"
+    SUM_TO_ONE = "sum_to_one"
+    IDENTITY = "identity"
 
 
 class ScheduleConfig(BaseModel, frozen=True):
@@ -28,8 +39,9 @@ class ScheduleConfig(BaseModel, frozen=True):
 
 
 class FitnessConfig(BaseModel, frozen=True):
-    mapping: FitnessMapping = FitnessMapping.EXPONENTIAL
+    mapping: FitnessMapping = FitnessMapping.DIRECT
     temperature: float = Field(default=1.0, gt=0)
+    normalize: NormalType = NormalType.MIN_MAX
 
 
 class DistanceConfig(BaseModel, frozen=True):
