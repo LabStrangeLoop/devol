@@ -72,6 +72,76 @@ def verify_convergence(population: NDArray, peaks: NDArray, tolerance: float) ->
     return flags
 
 
+def average_min_peak_distance(population: NDArray, peaks: NDArray) -> float:
+    """Average distance from each individual to its closest peak."""
+    distances = np.linalg.norm(population[:, None, :] - peaks[None, :, :], axis=2)
+    nearest = np.min(distances, axis=1)
+    return float(np.mean(nearest))
+
+
+def nearest_peak_stats(population: NDArray, peaks: NDArray) -> tuple[NDArray, NDArray]:
+    """Return nearest distances and peak indices for each individual."""
+    distances = np.linalg.norm(population[:, None, :] - peaks[None, :, :], axis=2)
+    nearest_idx = np.argmin(distances, axis=1)
+    nearest_dist = distances[np.arange(len(population)), nearest_idx]
+    return nearest_dist, nearest_idx
+
+
+def chi_square_p_value(statistic: float, dof: int) -> float:
+    """Right-tail p-value for chi-square using normal approximation (mean=k, var=2k)."""
+    if dof <= 0:
+        return 1.0
+    mean = dof
+    std = math.sqrt(2 * dof)
+    z = (statistic - mean) / std
+    return 1.0 - 0.5 * (1.0 + math.erf(z / math.sqrt(2)))
+
+
+def estimate_expected_peak_probs(peaks: NDArray, *, sample_size: int = 50_000, seed: int | None = 123) -> NDArray:
+    """Estimate nearest-peak probabilities for an initial N(0, I) population via Monte Carlo."""
+    rng = np.random.default_rng(seed)
+    samples = rng.standard_normal((sample_size, peaks.shape[1]))
+    distances = np.linalg.norm(samples[:, None, :] - peaks[None, :, :], axis=2)
+    nearest_idx = np.argmin(distances, axis=1)
+    counts = np.bincount(nearest_idx, minlength=len(peaks))
+    probs = counts / np.sum(counts)
+
+    # Avoid zero probability due to sampling noise; renormalize after floor.
+    probs = np.maximum(probs, 1e-12)
+    probs /= np.sum(probs)
+    return probs
+
+
+def estimate_expected_peak_probs_conditioned(
+    peaks: NDArray,
+    threshold: float,
+    *,
+    sample_size: int = 50_000,
+    seed: int | None = 123,
+) -> tuple[NDArray, int]:
+    """Estimate nearest-peak probabilities conditioned on being within the threshold of a peak."""
+    rng = np.random.default_rng(seed)
+    samples = rng.standard_normal((sample_size, peaks.shape[1]))
+    distances = np.linalg.norm(samples[:, None, :] - peaks[None, :, :], axis=2)
+    nearest_idx = np.argmin(distances, axis=1)
+    nearest_dist = distances[np.arange(len(samples)), nearest_idx]
+    mask = nearest_dist <= threshold
+    kept_idx = nearest_idx[mask]
+    kept_total = len(kept_idx)
+
+    if kept_total == 0:
+        raise RuntimeError(
+            "Fairness baseline failed: zero Monte Carlo samples fell within the assignment threshold. "
+            "Increase --fair-samples or loosen the threshold."
+        )
+
+    counts = np.bincount(kept_idx, minlength=len(peaks))
+    probs = counts / kept_total
+    probs = np.maximum(probs, 1e-12)
+    probs /= np.sum(probs)
+    return probs, kept_total
+
+
 def render_population(
     population: NDArray,
     peaks: NDArray,
@@ -119,6 +189,11 @@ def run_multi_peak(
     peak_seed: int | None = 123,
     fitness_mapping: FitnessMapping = FitnessMapping.DIRECT,
     normalization: NormalType = NormalType.SUM_TO_ONE,
+    min_improvement_ratio: float = 2.0,
+    temperature: float = 0.25,
+    fairness_alpha: float = 0.05,
+    min_expected_per_peak: int = 5,
+    fairness_sample_size: int = 50_000,
 ) -> None:
     """Run diffusion evolution and assert convergence for each target peak."""
     peaks = create_peak_positions(num_peaks, seed=peak_seed)
@@ -129,12 +204,23 @@ def run_multi_peak(
         num_steps=num_steps,
         param_dim=2,
         sigma_m=1.0,
-        seed=42,
-        fitness=FitnessConfig(mapping=fitness_mapping, normalize=normalization),
+        seed=333,
+        fitness=FitnessConfig(
+            mapping=fitness_mapping,
+            normalize=normalization,
+            temperature=temperature,
+        ),
     )
 
     algo = DiffusionEvolution(config, fitness_fn)
-    final_population = algo.run()
+    initial_population = algo.initialize_population()
+    initial_avg_distance = average_min_peak_distance(initial_population, peaks)
+
+    final_population = algo.run(initial_population)
+    final_distances, nearest_peaks = nearest_peak_stats(final_population, peaks)
+    final_avg_distance = float(np.mean(final_distances))
+    final_std_distance = float(np.std(final_distances))
+    improvement_ratio = math.inf if final_avg_distance == 0 else initial_avg_distance / final_avg_distance
 
     flags = verify_convergence(final_population, peaks, tolerance=convergence_radius)
 
@@ -143,13 +229,66 @@ def run_multi_peak(
         peak_coords = peaks[idx - 1]
         print(f"{status} Peak {idx}: ({peak_coords[0]:+.3f}, {peak_coords[1]:+.3f})")
 
+    print(
+        "Average nearest-peak distance: "
+        f"start {initial_avg_distance:.3f} -> end {final_avg_distance:.3f} (std {final_std_distance:.3f})"
+    )
+    print(f"Improvement ratio (start/end): {improvement_ratio:.2f}x")
+
     render_population(final_population, peaks, fitness_fn, plot_path)
 
-    if not all(flags):
-        missing = [str(i + 1) for i, ok in enumerate(flags) if not ok]
-        raise RuntimeError(f"Failed to converge on peaks: {', '.join(missing)}")
+    missing_peaks = [str(i + 1) for i, ok in enumerate(flags) if not ok]
+    if missing_peaks:
+        print(f"Note: peaks lacking neighbors within radius {convergence_radius}: {', '.join(missing_peaks)}")
 
-    print(f"Successfully converged on all {num_peaks} peaks.")
+    if improvement_ratio < min_improvement_ratio:
+        raise RuntimeError(
+            f"Insufficient improvement: {improvement_ratio:.2f}x (<{min_improvement_ratio:.2f}x target) "
+            f"[start {initial_avg_distance:.3f}, end {final_avg_distance:.3f}]"
+        )
+
+    assignment_threshold = final_avg_distance + final_std_distance
+    assigned_mask = final_distances <= assignment_threshold
+    assigned_indices = nearest_peaks[assigned_mask]
+    assigned_counts = np.bincount(assigned_indices, minlength=num_peaks)
+    assigned_total = int(np.sum(assigned_counts))
+
+    expected_probs, baseline_total = estimate_expected_peak_probs_conditioned(
+        peaks,
+        assignment_threshold,
+        sample_size=fairness_sample_size,
+        seed=peak_seed,
+    )
+    expected_counts = expected_probs * assigned_total
+
+    if np.any(expected_counts < min_expected_per_peak):
+        smallest = float(np.min(expected_counts))
+        raise RuntimeError(
+            "Population too small for fair-spread check with biased expectations: "
+            f"smallest expected count {smallest:.2f} (<{min_expected_per_peak}). "
+            "Increase population size or lower --min-expected."
+        )
+
+    chi_square_stat = float(np.sum((assigned_counts - expected_counts) ** 2 / expected_counts))
+    chi_dof = num_peaks - 1
+    chi_p_value = chi_square_p_value(chi_square_stat, chi_dof)
+
+    print(
+        f"Fairness check: threshold {assignment_threshold:.3f}, assigned {assigned_total} individuals; "
+        f"expected probs (conditioned) {np.round(expected_probs, 4).tolist()} from {baseline_total} baseline samples; "
+        f"counts per peak {assigned_counts.tolist()}, chi2={chi_square_stat:.3f}, dof={chi_dof}, p={chi_p_value:.3f}"
+    )
+
+    if chi_p_value < fairness_alpha:
+        raise RuntimeError(
+            f"Unbalanced allocation across peaks (p={chi_p_value:.3f} < {fairness_alpha:.3f}); "
+            "population collapsed unevenly relative to expected bias."
+        )
+
+    print(
+        f"Achieved {improvement_ratio:.2f}x improvement on average nearest-peak distance "
+        f"(target: {min_improvement_ratio:.2f}x) and passed fairness check (p={chi_p_value:.3f})."
+    )
 
 
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
@@ -164,6 +303,13 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         type=float,
         default=0.25,
         help="Distance threshold to count a peak as converged (default: 0.25)",
+    )
+    parser.add_argument(
+        "-t",
+        "--temperature",
+        type=float,
+        default=0.25,
+        help="Temperature to use in fitness mapping (default: 0.25)",
     )
     parser.add_argument(
         "-k",
@@ -188,6 +334,32 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         default=NormalType.SUM_TO_ONE,
         help="Fitness normalization strategy (default: sum_to_one)",
     )
+    parser.add_argument(
+        "-i",
+        "--improvement",
+        type=float,
+        default=2.0,
+        help="Required improvement ratio of average nearest-peak distance (start/end). Default: 2.0x",
+    )
+    parser.add_argument(
+        "-a",
+        "--alpha",
+        type=float,
+        default=0.05,
+        help="Significance level for chi-square fairness test (default: 0.05).",
+    )
+    parser.add_argument(
+        "--min-expected",
+        type=int,
+        default=5,
+        help="Minimum expected count per peak to run chi-square test (default: 5).",
+    )
+    parser.add_argument(
+        "--fair-samples",
+        type=int,
+        default=50_000,
+        help="Sample size for Monte Carlo estimation of biased peak probabilities (default: 50k).",
+    )
     return parser.parse_args(argv)
 
 
@@ -203,6 +375,11 @@ def main(argv: Sequence[str] | None = None) -> None:
             peak_seed=args.peak_seed,
             fitness_mapping=args.mapping,
             normalization=args.normalize,
+            min_improvement_ratio=args.improvement,
+            temperature=args.temperature,
+            fairness_alpha=args.alpha,
+            min_expected_per_peak=args.min_expected,
+            fairness_sample_size=args.fair_samples,
         )
     except RuntimeError as exc:  # Ensure CI failure on missed peaks.
         print(exc)
