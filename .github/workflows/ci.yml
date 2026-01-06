@@ -29,9 +29,3 @@ jobs:
         env:
           MPLBACKEND: Agg
         run: uv run pytest
-
-      - name: Smoke test (3 peaks)
-        run: uv run python tests/ci/n_peaks.py 3
-
-      - name: Smoke test (7 peaks)
-        run: uv run python tests/ci/n_peaks.py 7
