@@ -8,7 +8,7 @@ from numpy.typing import NDArray
 from devol.config import DiffusionConfig
 from devol.distance import create_distance_computer
 from devol.evolution import compute_epsilon_hat, estimate_x0, evolution_step
-from devol.fitness import create_fitness_mapper
+from devol.fitness import create_fitness_mapper, create_fitness_normalizer
 from devol.schedules import create_alpha_schedule, create_sigma_schedule
 
 
@@ -18,9 +18,7 @@ class DiffusionEvolution:
         self.fitness_fn = fitness_fn
         self.rng = np.random.default_rng(config.seed)
 
-        self.alpha = create_alpha_schedule(
-            config.schedule.type.value, config.num_steps, config.schedule.epsilon
-        )
+        self.alpha = create_alpha_schedule(config.schedule.type.value, config.num_steps, config.schedule.epsilon)
         self.sigma = create_sigma_schedule(self.alpha, config.sigma_m)
 
         self.distance_computer = create_distance_computer(
@@ -30,8 +28,9 @@ class DiffusionEvolution:
             config.seed,
         )
 
+        self.fitness_normalizer = create_fitness_normalizer(config.fitness.normalize)
         self.fitness_mapper = create_fitness_mapper(
-            config.fitness.mapping.value,
+            config.fitness.mapping,
             config.fitness.temperature,
         )
 
@@ -41,9 +40,7 @@ class DiffusionEvolution:
     # Make it a docstring
     # Explain how the noising op is shifting the original pdf to a ~N(0, 1)
     def initialize_population(self) -> NDArray:  # TODO: maybe make it of type Population
-        self.population = self.rng.standard_normal(
-            (self.config.population_size, self.config.param_dim)
-        )
+        self.population = self.rng.standard_normal((self.config.population_size, self.config.param_dim))
         return self.population
 
     def evaluate_fitness(self, population: NDArray) -> NDArray:
@@ -51,7 +48,9 @@ class DiffusionEvolution:
 
     def step(self, timestamp: int, population: NDArray) -> NDArray:
         fitness = self.evaluate_fitness(population)
-        fitness_weights = self.fitness_mapper(fitness)
+        normalized_fitness = self.fitness_normalizer(fitness)
+
+        fitness_weights = self.fitness_mapper(normalized_fitness)
 
         alpha_t = self.alpha[timestamp]
         alpha_t_minus_1 = self.alpha[timestamp - 1]
@@ -63,14 +62,14 @@ class DiffusionEvolution:
             x_t = population[i]
             x_hat_0 = estimate_x0(x_t, population, fitness_weights, alpha_t, self.distance_computer)
             epsilon_hat = compute_epsilon_hat(x_t, x_hat_0, alpha_t)
-            new_population[i] = evolution_step(
-                x_t, x_hat_0, epsilon_hat, alpha_t, alpha_t_minus_1, sigma_t, self.rng
-            )
+            new_population[i] = evolution_step(x_t, x_hat_0, epsilon_hat, alpha_t, alpha_t_minus_1, sigma_t, self.rng)
 
         return new_population
 
-    def run(self) -> NDArray:
-        population = self.initialize_population()
+    def run(self, initial_population: NDArray | None) -> NDArray:
+        population = initial_population
+        if population is None:
+            population = self.initialize_population()
 
         for timestamp in range(self.config.num_steps, 0, -1):
             population = self.step(timestamp, population)
