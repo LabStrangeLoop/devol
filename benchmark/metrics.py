@@ -24,7 +24,7 @@ class BenchmarkMetrics:
     num_steps: int
     param_dim: int
     sigma_m: float
-    seed: int
+    seed: int | None
 
     # Performance metrics
     best_fitness: float

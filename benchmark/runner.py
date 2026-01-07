@@ -1,9 +1,9 @@
 """Grid search runner with multiprocessing support."""
 
 import time
+from dataclasses import dataclass
 from itertools import product
 from multiprocessing import Pool, cpu_count
-from typing import Any
 
 import numpy as np
 from tqdm import tqdm
@@ -15,51 +15,45 @@ from benchmark.metrics import (
     evaluate_population_fitness,
 )
 from devol import DiffusionConfig, DiffusionEvolution
+from devol.config import ScheduleConfig, ScheduleType
 
 
-def run_single_experiment(params: dict[str, Any]) -> BenchmarkMetrics:
-    """Run a single experiment with given parameters.
+@dataclass
+class ExperimentConfig:
+    """Configuration for a single benchmark experiment."""
+
+    config: DiffusionConfig
+    fitness_fn: FitnessFunction
+
+
+def run_single_experiment(experiment: ExperimentConfig) -> BenchmarkMetrics:
+    """Run a single experiment with given configuration.
 
     Args:
-        params: Dictionary with experiment parameters
+        experiment: ExperimentConfig with DiffusionConfig and fitness function
 
     Returns:
         BenchmarkMetrics object with results
     """
-    schedule_type = params["schedule_type"]
-    population_size = params["population_size"]
-    num_steps = params["num_steps"]
-    param_dim = params["param_dim"]
-    sigma_m = params["sigma_m"]
-    seed = params["seed"]
-    fitness_fn = params["fitness_fn"]
-
-    config = DiffusionConfig(
-        population_size=population_size,
-        num_steps=num_steps,
-        param_dim=param_dim,
-        sigma_m=sigma_m,
-        schedule={"type": schedule_type},
-        seed=seed,
-    )
+    config = experiment.config
+    fitness_fn = experiment.fitness_fn
 
     start_time = time.time()
     algo = DiffusionEvolution(config, fitness_fn)
-    final_pop = algo.run()
+    final_pop = algo.run(initial_population=None)
     runtime = time.time() - start_time
 
     best_individual, best_fitness = algo.get_best_individual()
     fitness_values = evaluate_population_fitness(final_pop, fitness_fn)
-
     final_diversity = calculate_population_diversity(fitness_values)
 
     return BenchmarkMetrics(
-        schedule_type=schedule_type,
-        population_size=population_size,
-        num_steps=num_steps,
-        param_dim=param_dim,
-        sigma_m=sigma_m,
-        seed=seed,
+        schedule_type=config.schedule.type.value,
+        population_size=config.population_size,
+        num_steps=config.num_steps,
+        param_dim=config.param_dim,
+        sigma_m=config.sigma_m,
+        seed=config.seed,
         best_fitness=float(best_fitness),
         mean_fitness=float(np.mean(fitness_values)),
         std_fitness=float(np.std(fitness_values)),
@@ -75,7 +69,7 @@ class GridSearchRunner:
     def __init__(
         self,
         fitness_fn: FitnessFunction,
-        schedule_types: list[str],
+        schedule_types: list[ScheduleType | str],
         population_sizes: list[int],
         num_steps_list: list[int],
         param_dims: list[int],
@@ -96,7 +90,9 @@ class GridSearchRunner:
             n_workers: Number of parallel workers (default: CPU count)
         """
         self.fitness_fn = fitness_fn
-        self.schedule_types = schedule_types
+        self.schedule_types = [
+            ScheduleType(s) if isinstance(s, str) else s for s in schedule_types
+        ]
         self.population_sizes = population_sizes
         self.num_steps_list = num_steps_list
         self.param_dims = param_dims
@@ -104,10 +100,10 @@ class GridSearchRunner:
         self.seeds = seeds
         self.n_workers = n_workers or cpu_count()
 
-    def generate_experiments(self) -> list[dict[str, Any]]:
+    def generate_experiments(self) -> list[ExperimentConfig]:
         """Generate all experiment configurations."""
-        configs = []
-        for schedule, pop_size, steps, dim, sigma, seed in product(
+        experiments = []
+        for schedule_type, pop_size, steps, dim, sigma, seed in product(
             self.schedule_types,
             self.population_sizes,
             self.num_steps_list,
@@ -115,16 +111,16 @@ class GridSearchRunner:
             self.sigma_m_values,
             self.seeds,
         ):
-            configs.append({
-                "schedule_type": schedule,
-                "population_size": pop_size,
-                "num_steps": steps,
-                "param_dim": dim,
-                "sigma_m": sigma,
-                "seed": seed,
-                "fitness_fn": self.fitness_fn,
-            })
-        return configs
+            config = DiffusionConfig(
+                population_size=pop_size,
+                num_steps=steps,
+                param_dim=dim,
+                sigma_m=sigma,
+                schedule=ScheduleConfig(type=schedule_type),
+                seed=seed,
+            )
+            experiments.append(ExperimentConfig(config=config, fitness_fn=self.fitness_fn))
+        return experiments
 
     def run(self, verbose: bool = True) -> list[BenchmarkMetrics]:
         """Run all experiments in parallel.
