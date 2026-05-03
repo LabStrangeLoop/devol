@@ -30,14 +30,20 @@ jobs:
           set -euo pipefail
           tag="${GITHUB_REF#refs/tags/}"
           version="${tag#v}"
+          base_version="${version%%[abr]*}"  # strip a1/b1/rc1 suffix if present
           echo "Tag: $tag"
           echo "Version from tag: $version"
+          echo "Base version: $base_version"
 
           pyproject_version=$(uv run --no-sync python -c "import tomllib, pathlib; print(tomllib.loads(pathlib.Path('pyproject.toml').read_text())['project']['version'])")
           echo "Version in pyproject.toml: $pyproject_version"
 
-          if [ "$version" != "$pyproject_version" ]; then
-            echo "::error::Tag version ($version) does not match pyproject.toml version ($pyproject_version)"
+          # Tag must either match pyproject.toml exactly (final release) OR be a
+          # prerelease (a/b/rc) of the version declared in pyproject.toml. This
+          # lets us dry-run v0.1.0rc1 before tagging v0.1.0 without bumping
+          # pyproject.toml churn.
+          if [ "$version" != "$pyproject_version" ] && [ "$base_version" != "$pyproject_version" ]; then
+            echo "::error::Tag version ($version) is not a release of pyproject.toml version ($pyproject_version)"
             exit 1
           fi
 
