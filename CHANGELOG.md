@@ -12,6 +12,14 @@ the set of symbols exported from `devol.__all__`; anything else is internal.
 
 ### Added
 
+- README badges: PyPI version, supported Python versions, CI status, license.
+
+## [0.1.0] - 2026-05-03
+
+First published release to PyPI.
+
+### Added
+
 - Project metadata for PyPI publication (license, authors, classifiers, URLs).
 - `LICENSE` file (MIT).
 - `py.typed` marker so downstream type checkers pick up `devol`'s inline hints.
@@ -36,7 +44,3 @@ the set of symbols exported from `devol.__all__`; anything else is internal.
 ### Fixed
 
 - `DiffusionEvolution.run()` no longer requires `initial_population`; calling `algo.run()` now initializes a population automatically, matching the documented Quick Start usage and unblocking the `devol` CLI entry point.
-
-## [0.1.0]
-
-Initial development version. Not yet released to PyPI.

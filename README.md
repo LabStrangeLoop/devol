@@ -1,5 +1,10 @@
 # Devol
 
+[![PyPI version](https://img.shields.io/pypi/v/devol.svg)](https://pypi.org/project/devol/)
+[![Python versions](https://img.shields.io/pypi/pyversions/devol.svg)](https://pypi.org/project/devol/)
+[![CI](https://github.com/LabStrangeLoop/devol/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/LabStrangeLoop/devol/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/LabStrangeLoop/devol/blob/main/LICENSE)
+
 **Diffusion Evolution** - What if evolution worked like image generation?
 
 ## What Is This?
