@@ -1,8 +1,8 @@
 """Parameter serialization and deserialization for LeNet models."""
 
+import numpy as np
 import torch
 import torch.nn as nn
-import numpy as np
 from numpy.typing import NDArray
 
 from examples.mnist.lenet5 import LeNet5, LeNetMini, create_lenet5, create_lenet_mini

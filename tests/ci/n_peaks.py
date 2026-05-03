@@ -7,8 +7,8 @@ from __future__ import annotations
 
 import argparse
 import math
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Sequence
 
 import numpy as np
 from numpy.typing import NDArray
@@ -96,8 +96,8 @@ def render_population(
 
     x = np.linspace(bounds[0], bounds[1], 120)
     y = np.linspace(bounds[0], bounds[1], 120)
-    X, Y = np.meshgrid(x, y)
-    Z = np.zeros_like(X)
+    X, Y = np.meshgrid(x, y)  # noqa: N806
+    Z = np.zeros_like(X)  # noqa: N806
 
     for i in range(X.shape[0]):
         for j in range(X.shape[1]):
@@ -161,10 +161,7 @@ def run_multi_peak(
         peak_coords = peaks[idx - 1]
         print(f"{status} Peak {idx}: ({peak_coords[0]:+.3f}, {peak_coords[1]:+.3f})")
 
-    print(
-        "Average nearest-peak distance: "
-        f"start {initial_avg_distance:.3f} -> end {final_avg_distance:.3f}"
-    )
+    print(f"Average nearest-peak distance: start {initial_avg_distance:.3f} -> end {final_avg_distance:.3f}")
     print(f"Improvement ratio (start/end): {improvement_ratio:.2f}x")
 
     render_population(final_population, peaks, fitness_fn, plot_path)

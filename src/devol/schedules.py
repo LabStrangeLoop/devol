@@ -5,6 +5,8 @@ from typing import Protocol
 import numpy as np
 from numpy.typing import NDArray
 
+FloatArray = NDArray[np.float64]
+
 
 class Schedule(Protocol):
     def __call__(self, t: int, total_steps: int) -> float:
@@ -27,7 +29,7 @@ class CosineSchedule:
     """
 
     def __call__(self, t: int, total_steps: int) -> float:
-        return 0.5 * np.cos(np.pi * t / total_steps) + 0.5
+        return float(0.5 * np.cos(np.pi * t / total_steps) + 0.5)
 
 
 class DDPMSchedule:
@@ -46,7 +48,7 @@ class DDPMSchedule:
         return float(np.exp(-beta_0 * t - gamma * t * t / total_steps))
 
 
-def create_alpha_schedule(schedule_type: str, total_steps: int, epsilon: float) -> NDArray:
+def create_alpha_schedule(schedule_type: str, total_steps: int, epsilon: float) -> FloatArray:
     schedule: Schedule
     if schedule_type == "linear":
         schedule = LinearSchedule()
@@ -60,7 +62,7 @@ def create_alpha_schedule(schedule_type: str, total_steps: int, epsilon: float) 
     return np.array([schedule(t, total_steps) for t in range(total_steps + 1)])
 
 
-def create_sigma_schedule(alpha: NDArray, sigma_m: float) -> NDArray:
+def create_sigma_schedule(alpha: FloatArray, sigma_m: float) -> FloatArray:
     """
     This is following the paper's equation 17 from appendix A.2
     """

@@ -150,7 +150,7 @@ def run_cartpole(show_progress: bool = False, compare: bool = True) -> None:
         seed=42,
     )
 
-    print(f"\nRunning evolution:")
+    print("\nRunning evolution:")
     print(f"  Population size: {config.population_size}")
     print(f"  Evolution steps: {config.num_steps}")
     #    print(f"  Distance metric: latent space (dim={config.distance.latent_dim})")
@@ -170,7 +170,7 @@ def run_cartpole(show_progress: bool = False, compare: bool = True) -> None:
     final_population = algo.run()
     best_individual, best_fitness = algo.get_best_individual()
 
-    print(f"\n" + "=" * 60)
+    print("\n" + "=" * 60)
     print("EVOLUTION COMPLETE")
     print("=" * 60)
     print(f"Best fitness achieved: {best_fitness:.2f}")
@@ -182,7 +182,7 @@ def run_cartpole(show_progress: bool = False, compare: bool = True) -> None:
     if test_reward >= 475:
         print("✓ Task SOLVED! (reward >= 475)")
     else:
-        print(f"✗ Task not solved yet (need >= 475)")
+        print("✗ Task not solved yet (need >= 475)")
 
     print("\nDemonstrating best evolved controller:")
     demonstrate_controller(best_individual, num_demos=3)

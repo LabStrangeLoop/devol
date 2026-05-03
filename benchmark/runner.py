@@ -90,9 +90,7 @@ class GridSearchRunner:
             n_workers: Number of parallel workers (default: CPU count)
         """
         self.fitness_fn = fitness_fn
-        self.schedule_types = [
-            ScheduleType(s) if isinstance(s, str) else s for s in schedule_types
-        ]
+        self.schedule_types = [ScheduleType(s) if isinstance(s, str) else s for s in schedule_types]
         self.population_sizes = population_sizes
         self.num_steps_list = num_steps_list
         self.param_dims = param_dims

@@ -2,14 +2,15 @@
 
 import argparse
 import sys
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any
 
 import numpy as np
 from pydantic_yaml import parse_yaml_file_as
 
 from devol.algorithm import DiffusionEvolution
 from devol.config import DiffusionConfig
+from devol.distance import FloatArray
 
 
 def load_config(config_path: str) -> DiffusionConfig:
@@ -17,12 +18,12 @@ def load_config(config_path: str) -> DiffusionConfig:
     return parse_yaml_file_as(DiffusionConfig, Path(config_path))
 
 
-def sphere_function(x: np.ndarray) -> float:
+def sphere_function(x: FloatArray) -> float:
     """Sphere function: maximize -(x^2)."""
-    return -np.sum(x**2)
+    return float(-np.sum(x**2))
 
 
-def rosenbrock_function(x: np.ndarray) -> float:
+def rosenbrock_function(x: FloatArray) -> float:
     """Rosenbrock function (minimization converted to maximization)."""
     result = 0.0
     for i in range(len(x) - 1):
@@ -30,7 +31,7 @@ def rosenbrock_function(x: np.ndarray) -> float:
     return -result
 
 
-BUILTIN_FUNCTIONS: dict[str, Any] = {
+BUILTIN_FUNCTIONS: dict[str, Callable[[FloatArray], float]] = {
     "sphere": sphere_function,
     "rosenbrock": rosenbrock_function,
 }

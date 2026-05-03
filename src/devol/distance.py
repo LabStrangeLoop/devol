@@ -5,17 +5,20 @@ from typing import Protocol
 import numpy as np
 from numpy.typing import NDArray
 
+FloatArray = NDArray[np.float64]
+
 
 class DistanceComputer(Protocol):
-    def compute_distances(self, x_i: NDArray, population: NDArray) -> NDArray:
+    def compute_distances(self, x_i: FloatArray, population: FloatArray) -> FloatArray:
         """Compute distances from x_i to all individuals in population."""
         ...
 
 
 class EuclideanDistance:
-    def compute_distances(self, x_i: NDArray, population: NDArray) -> NDArray:
+    def compute_distances(self, x_i: FloatArray, population: FloatArray) -> FloatArray:
         diff = population - x_i
-        return np.sum(diff * diff, axis=1)
+        result: FloatArray = np.sum(diff * diff, axis=1)
+        return result
 
 
 class LatentDistance:
@@ -23,15 +26,16 @@ class LatentDistance:
         rng = np.random.default_rng(seed)
         self.projection = rng.normal(0, 1 / np.sqrt(param_dim), (latent_dim, param_dim))
 
-    def compute_distances(self, x_i: NDArray, population: NDArray) -> NDArray:
+    def compute_distances(self, x_i: FloatArray, population: FloatArray) -> FloatArray:
         z_i = self.projection @ x_i
         z_pop = self.projection @ population.T
         diff = z_pop.T - z_i
-        return np.sum(diff * diff, axis=1)
+        result: FloatArray = np.sum(diff * diff, axis=1)
+        return result
 
 
 class CosineDistance:
-    def compute_distances(self, x_i: NDArray, population: NDArray) -> NDArray:
+    def compute_distances(self, x_i: FloatArray, population: FloatArray) -> FloatArray:
         norm_i = np.linalg.norm(x_i)
         norms_pop = np.linalg.norm(population, axis=1)
 
@@ -40,7 +44,8 @@ class CosineDistance:
 
         similarity = population @ x_i / (norms_pop * norm_i)
         similarity = np.clip(similarity, -1, 1)
-        return 1 - similarity
+        result: FloatArray = 1 - similarity
+        return result
 
 
 def create_distance_computer(

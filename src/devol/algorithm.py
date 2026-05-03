@@ -3,17 +3,16 @@
 from collections.abc import Callable
 
 import numpy as np
-from numpy.typing import NDArray
 
 from devol.config import DiffusionConfig
-from devol.distance import create_distance_computer
+from devol.distance import FloatArray, create_distance_computer
 from devol.evolution import compute_epsilon_hat, estimate_x0, evolution_step
 from devol.fitness import create_fitness_mapper, create_fitness_normalizer
 from devol.schedules import create_alpha_schedule, create_sigma_schedule
 
 
 class DiffusionEvolution:
-    def __init__(self, config: DiffusionConfig, fitness_fn: Callable[[NDArray], float]) -> None:
+    def __init__(self, config: DiffusionConfig, fitness_fn: Callable[[FloatArray], float]) -> None:
         self.config = config
         self.fitness_fn = fitness_fn
         self.rng = np.random.default_rng(config.seed)
@@ -34,19 +33,16 @@ class DiffusionEvolution:
             config.fitness.temperature,
         )
 
-        self.population: NDArray | None = None
+        self.population: FloatArray | None = None
 
-    # TODO: Is this init optimal? do we want to abstract it?
-    # Make it a docstring
-    # Explain how the noising op is shifting the original pdf to a ~N(0, 1)
-    def initialize_population(self) -> NDArray:  # TODO: maybe make it of type Population
+    def initialize_population(self) -> FloatArray:
         self.population = self.rng.standard_normal((self.config.population_size, self.config.param_dim))
         return self.population
 
-    def evaluate_fitness(self, population: NDArray) -> NDArray:
+    def evaluate_fitness(self, population: FloatArray) -> FloatArray:
         return np.array([self.fitness_fn(ind) for ind in population])
 
-    def step(self, timestamp: int, population: NDArray) -> NDArray:
+    def step(self, timestamp: int, population: FloatArray) -> FloatArray:
         fitness = self.evaluate_fitness(population)
         normalized_fitness = self.fitness_normalizer(fitness)
 
@@ -66,7 +62,7 @@ class DiffusionEvolution:
 
         return new_population
 
-    def run(self, initial_population: NDArray | None) -> NDArray:
+    def run(self, initial_population: FloatArray | None = None) -> FloatArray:
         population = initial_population
         if population is None:
             population = self.initialize_population()
@@ -77,9 +73,9 @@ class DiffusionEvolution:
         self.population = population
         return population
 
-    def get_best_individual(self) -> tuple[NDArray, float]:
+    def get_best_individual(self) -> tuple[FloatArray, float]:
         if self.population is None:
             raise ValueError("Algorithm has not been run yet")
         fitness = self.evaluate_fitness(self.population)
-        best_idx = np.argmax(fitness)
-        return self.population[best_idx], fitness[best_idx]
+        best_idx = int(np.argmax(fitness))
+        return self.population[best_idx], float(fitness[best_idx])

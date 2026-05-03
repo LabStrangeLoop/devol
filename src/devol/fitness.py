@@ -7,15 +7,17 @@ from numpy.typing import NDArray
 
 from devol.config import FitnessMapping, NormalType
 
+FloatArray = NDArray[np.float64]
+
 
 class FitnessMapper(Protocol):
-    def __call__(self, fitness: NDArray) -> NDArray:
+    def __call__(self, fitness: FloatArray) -> FloatArray:
         """Map fitness values to probability weights."""
         ...
 
 
 class FitnessNormalizer(Protocol):
-    def __call__(self, fitness: NDArray) -> NDArray:
+    def __call__(self, fitness: FloatArray) -> FloatArray:
         """Normalize fitness values to be within acceptable range or gaussian."""
         ...
 
@@ -23,21 +25,23 @@ class FitnessNormalizer(Protocol):
 class Identity:
     """Identity fitness mapping function."""
 
-    def __init__(self, l2_factor=0.0):
+    def __init__(self, l2_factor: float = 0.0) -> None:
         self.l2_factor = l2_factor
 
-    def l2(self, x):
-        return np.linalg.norm(x, axis=-1) ** 2
+    def l2(self, x: FloatArray) -> FloatArray:
+        result: FloatArray = np.linalg.norm(x, axis=-1) ** 2
+        return result
 
-    def forward(self, x):
+    def forward(self, x: FloatArray) -> FloatArray:
         return x
 
-    def __call__(self, fitness: NDArray) -> NDArray:
-        return self.forward(fitness) * np.exp(-1.0 * self.l2(fitness) * self.l2_factor)
+    def __call__(self, fitness: FloatArray) -> FloatArray:
+        result: FloatArray = self.forward(fitness) * np.exp(-1.0 * self.l2(fitness) * self.l2_factor)
+        return result
 
 
 class DirectMapper:
-    def __call__(self, fitness: NDArray) -> NDArray:
+    def __call__(self, fitness: FloatArray) -> FloatArray:
         return fitness
 
 
@@ -51,14 +55,14 @@ class Energy(Identity):
         p: torch.Tensor, the probability of the fitness. Compute by exp(-x / temperature).
     """
 
-    def __init__(self, temperature=1.0, l2_factor=0.0):
+    def __init__(self, temperature: float = 1.0, l2_factor: float = 0.0) -> None:
         super().__init__(l2_factor=l2_factor)
         self.temperature = temperature
 
-    def forward(self, x):
+    def forward(self, x: FloatArray) -> FloatArray:
         power = -x / self.temperature
         power = power - power.max() + 5  # avoid overflow
-        p = np.exp(power)
+        p: FloatArray = np.exp(power)
         return p
 
 
@@ -66,16 +70,18 @@ class ExponentialMapper:
     def __init__(self, temperature: float = 1.0):
         self.temperature = temperature
 
-    def __call__(self, fitness: NDArray) -> NDArray:
+    def __call__(self, fitness: FloatArray) -> FloatArray:
         scaled = fitness / self.temperature
         exp_fitness = np.exp(scaled - np.max(scaled))
-        return exp_fitness / np.sum(exp_fitness)
+        result: FloatArray = exp_fitness / np.sum(exp_fitness)
+        return result
 
 
 class RankMapper:
-    def __call__(self, fitness: NDArray) -> NDArray:
+    def __call__(self, fitness: FloatArray) -> FloatArray:
         ranks = np.argsort(np.argsort(fitness)) + 1
-        return ranks / len(ranks)
+        result: FloatArray = ranks / len(ranks)
+        return result
 
 
 def create_fitness_mapper(
@@ -103,51 +109,55 @@ class MaxScaleNormalizer:
     def __init__(self, epsilon: float = 1e-12):
         self.epsilon = epsilon
 
-    def __call__(self, fitness: NDArray) -> NDArray:
+    def __call__(self, fitness: FloatArray) -> FloatArray:
         max_abs = np.max(np.abs(fitness))
         if max_abs < self.epsilon:
             return np.zeros_like(fitness)
-        return fitness / max_abs
+        result: FloatArray = fitness / max_abs
+        return result
 
 
 class MinMaxNormalizer:
     def __init__(self, epsilon: float = 1e-12):
         self.epsilon = epsilon
 
-    def __call__(self, fitness: NDArray) -> NDArray:
+    def __call__(self, fitness: FloatArray) -> FloatArray:
         min_val = np.min(fitness)
         max_val = np.max(fitness)
         span = max_val - min_val
         if span < self.epsilon:
             return np.zeros_like(fitness)
-        return (fitness - min_val) / span
+        result: FloatArray = (fitness - min_val) / span
+        return result
 
 
 class ZScoreNormalizer:
     def __init__(self, epsilon: float = 1e-12):
         self.epsilon = epsilon
 
-    def __call__(self, fitness: NDArray) -> NDArray:
+    def __call__(self, fitness: FloatArray) -> FloatArray:
         mean = np.mean(fitness)
         std = np.std(fitness)
         if std < self.epsilon:
             return np.zeros_like(fitness)
-        return (fitness - mean) / std
+        result: FloatArray = (fitness - mean) / std
+        return result
 
 
 class SumToOneNormalizer:
     def __init__(self, epsilon: float = 1e-12):
         self.epsilon = epsilon
 
-    def __call__(self, fitness: NDArray) -> NDArray:
+    def __call__(self, fitness: FloatArray) -> FloatArray:
         total = np.sum(np.abs(fitness))
         if total < self.epsilon:
             return np.zeros_like(fitness)
-        return fitness / total
+        result: FloatArray = fitness / total
+        return result
 
 
 class IdentityNormalizer:
-    def __call__(self, fitness: NDArray) -> NDArray:
+    def __call__(self, fitness: FloatArray) -> FloatArray:
         return fitness
 
 

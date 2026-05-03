@@ -28,9 +28,7 @@ def display_results(results: list[BenchmarkMetrics]) -> None:
     display_parameter_sensitivity(results, console)
 
 
-def display_schedule_summary(
-    results: list[BenchmarkMetrics], console: Console
-) -> None:
+def display_schedule_summary(results: list[BenchmarkMetrics], console: Console) -> None:
     """Display summary statistics for each schedule type."""
     table = Table(title="Schedule Performance Summary")
 
@@ -92,9 +90,7 @@ def display_best_configs(results: list[BenchmarkMetrics], console: Console) -> N
     console.print(table)
 
 
-def display_parameter_sensitivity(
-    results: list[BenchmarkMetrics], console: Console
-) -> None:
+def display_parameter_sensitivity(results: list[BenchmarkMetrics], console: Console) -> None:
     """Display how performance varies with each parameter."""
     params = ["population_size", "num_steps", "param_dim", "sigma_m"]
 

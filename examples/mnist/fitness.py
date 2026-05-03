@@ -1,11 +1,10 @@
 """GPU-batched fitness evaluation for MNIST."""
 
+import numpy as np
 import torch
-import torch.nn as nn
+from numpy.typing import NDArray
 from torch.utils.data import DataLoader, Subset
 from torchvision import datasets, transforms
-import numpy as np
-from numpy.typing import NDArray
 
 from examples.mnist.serialization import deserialize_model
 
