@@ -92,7 +92,7 @@ def run_cartpole() -> None:
     if test_reward >= 475:
         print("✓ Task solved! (reward >= 475)")
     else:
-        print(f"Task not yet solved. Try more steps or larger population.")
+        print("Task not yet solved. Try more steps or larger population.")
 
 
 if __name__ == "__main__":

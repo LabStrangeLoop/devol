@@ -1,7 +1,6 @@
 """Tests for distance computation strategies."""
 
 import numpy as np
-import pytest
 
 from devol.distance import CosineDistance, EuclideanDistance, LatentDistance
 

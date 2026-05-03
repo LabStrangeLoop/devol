@@ -65,12 +65,8 @@ def create_heatmaps(results: list[BenchmarkMetrics], output_dir: str) -> None:
             global_max = max(global_max, valid_data.max())
 
     # Second pass: plot with consistent scale
-    for ax, sched, (heatmap_data, pop_sizes, step_counts) in zip(
-        axes, schedules, all_heatmaps
-    ):
-        im = ax.imshow(
-            heatmap_data, cmap="RdYlGn_r", aspect="auto", vmin=global_min, vmax=global_max
-        )
+    for ax, sched, (heatmap_data, pop_sizes, step_counts) in zip(axes, schedules, all_heatmaps):
+        im = ax.imshow(heatmap_data, cmap="RdYlGn_r", aspect="auto", vmin=global_min, vmax=global_max)
         ax.set_title(f"{sched} Schedule")
         ax.set_xlabel("Population Size")
         ax.set_ylabel("Num Steps")
@@ -111,11 +107,7 @@ def create_line_plots(results: list[BenchmarkMetrics], output_dir: str) -> None:
             stds = []
 
             for val in param_vals:
-                distances = [
-                    r.distance_from_origin
-                    for r in sched_results
-                    if getattr(r, param_name) == val
-                ]
+                distances = [r.distance_from_origin for r in sched_results if getattr(r, param_name) == val]
                 means.append(np.mean(distances))
                 stds.append(np.std(distances))
 
@@ -139,9 +131,7 @@ def create_line_plots(results: list[BenchmarkMetrics], output_dir: str) -> None:
             ax.set_xscale("log")
 
         plt.tight_layout()
-        plt.savefig(
-            f"{output_dir}/lineplot_{param_name}.png", dpi=150, bbox_inches="tight"
-        )
+        plt.savefig(f"{output_dir}/lineplot_{param_name}.png", dpi=150, bbox_inches="tight")
         plt.close()
 
 
@@ -155,10 +145,7 @@ def create_boxplots(results: list[BenchmarkMetrics], output_dir: str) -> None:
     fig, ax = plt.subplots(figsize=(10, 6))
 
     schedules = sorted(set(r.schedule_type for r in results))
-    data = [
-        [r.distance_from_origin for r in results if r.schedule_type == sched]
-        for sched in schedules
-    ]
+    data = [[r.distance_from_origin for r in results if r.schedule_type == sched] for sched in schedules]
 
     bp = ax.boxplot(data, labels=schedules, patch_artist=True)
 

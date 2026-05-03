@@ -75,6 +75,9 @@ packages = ["src/devol", "examples"]
 [tool.ruff]
 line-length = 120
 target-version = "py311"
+# Demo scripts are linted separately; they use argparse globals, numpy meshgrid
+# conventions, and half-finished code that doesn't belong in the published package.
+exclude = ["examples"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "W", "UP"]
@@ -84,3 +87,4 @@ strict = true
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = true
+files = ["src/devol"]

@@ -64,9 +64,7 @@ def calculate_population_diversity(fitness: NDArray) -> float:
     return float(np.std(fitness))
 
 
-def evaluate_population_fitness(
-    population: NDArray, fitness_fn: FitnessFunction
-) -> NDArray:
+def evaluate_population_fitness(population: NDArray, fitness_fn: FitnessFunction) -> NDArray:
     """Evaluate fitness for entire population.
 
     Args:

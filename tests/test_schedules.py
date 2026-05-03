@@ -1,7 +1,6 @@
 """Tests for schedule implementations."""
 
 import numpy as np
-import pytest
 
 from devol.schedules import CosineSchedule, DDPMSchedule, LinearSchedule, create_alpha_schedule
 

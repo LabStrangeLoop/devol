@@ -2,7 +2,6 @@
 
 import json
 from pathlib import Path
-from typing import Any
 
 import numpy as np
 import torch
@@ -12,8 +11,6 @@ from pydantic_yaml import parse_yaml_file_as
 from devol.algorithm import DiffusionEvolution
 from examples.mnist.config import MNISTConfig
 from examples.mnist.fitness import MNISTFitnessEvaluator
-from examples.mnist.lenet5 import count_parameters, create_lenet5, create_lenet_mini
-from examples.mnist.serialization import create_random_individual, serialize_model
 
 
 class MNISTEvolution(DiffusionEvolution):
@@ -99,7 +96,7 @@ class MNISTEvolution(DiffusionEvolution):
                     break
 
                 if self.patience_counter >= self.mnist_config.early_stopping_patience:
-                    print(f"\n✗ Early stopping triggered (patience exhausted)")
+                    print("\n✗ Early stopping triggered (patience exhausted)")
                     break
 
         self.population = population
