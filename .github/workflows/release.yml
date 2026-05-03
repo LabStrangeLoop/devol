@@ -1,0 +1,154 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"       # v0.1.0        -> PyPI
+      - "v[0-9]+.[0-9]+.[0-9]+a[0-9]+" # v0.1.0a1     -> TestPyPI
+      - "v[0-9]+.[0-9]+.[0-9]+b[0-9]+" # v0.1.0b1     -> TestPyPI
+      - "v[0-9]+.[0-9]+.[0-9]+rc[0-9]+" # v0.1.0rc1   -> TestPyPI
+
+jobs:
+  validate:
+    name: Validate tag and version
+    runs-on: ubuntu-latest
+    outputs:
+      is_prerelease: ${{ steps.classify.outputs.is_prerelease }}
+      version: ${{ steps.classify.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Set up Python
+        run: uv python install 3.13
+
+      - name: Classify tag and verify version
+        id: classify
+        run: |
+          set -euo pipefail
+          tag="${GITHUB_REF#refs/tags/}"
+          version="${tag#v}"
+          echo "Tag: $tag"
+          echo "Version from tag: $version"
+
+          pyproject_version=$(uv run --no-sync python -c "import tomllib, pathlib; print(tomllib.loads(pathlib.Path('pyproject.toml').read_text())['project']['version'])")
+          echo "Version in pyproject.toml: $pyproject_version"
+
+          if [ "$version" != "$pyproject_version" ]; then
+            echo "::error::Tag version ($version) does not match pyproject.toml version ($pyproject_version)"
+            exit 1
+          fi
+
+          if [[ "$version" =~ (a|b|rc)[0-9]+$ ]]; then
+            echo "is_prerelease=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "is_prerelease=false" >> "$GITHUB_OUTPUT"
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+  build:
+    name: Build distributions
+    needs: validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Set up Python
+        run: uv python install 3.13
+
+      - name: Build sdist and wheel
+        run: uv build
+
+      - name: Check artifacts
+        run: uv run --with twine twine check dist/*
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  publish-testpypi:
+    name: Publish to TestPyPI
+    needs: [validate, build]
+    if: needs.validate.outputs.is_prerelease == 'true'
+    runs-on: ubuntu-latest
+    environment:
+      name: testpypi
+      url: https://test.pypi.org/project/devol/
+    permissions:
+      id-token: write
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - name: Publish to TestPyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
+
+  publish-pypi:
+    name: Publish to PyPI
+    needs: [validate, build]
+    if: needs.validate.outputs.is_prerelease == 'false'
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/project/devol/
+    permissions:
+      id-token: write
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+
+  github-release:
+    name: Create GitHub Release
+    needs: [validate, build, publish-pypi]
+    if: needs.validate.outputs.is_prerelease == 'false'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - name: Extract changelog section
+        id: changelog
+        run: |
+          set -euo pipefail
+          version="${{ needs.validate.outputs.version }}"
+          awk -v v="$version" '
+            /^## \[/{ if(found) exit; if($0 ~ "\\[" v "\\]") { found=1; next } }
+            found { print }
+          ' CHANGELOG.md > release_notes.md || true
+          if [ ! -s release_notes.md ]; then
+            echo "No changelog section found for $version; using generic message."
+            echo "Release $version" > release_notes.md
+          fi
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+          body_path: release_notes.md
+          tag_name: ${{ github.ref_name }}
+          name: ${{ needs.validate.outputs.version }}
+          draft: false
+          prerelease: false
