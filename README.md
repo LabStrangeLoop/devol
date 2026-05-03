@@ -12,6 +12,21 @@ This reframing gives us an algorithm that naturally transitions from broad explo
 
 **The intuition**: Imagine you're in a foggy room full of people, each standing at a different elevation. You can only see your immediate neighbors through the fog. To find the highest point, you don't just copy the person next to you - you look at everyone nearby, weight them by height, and move toward the weighted average. As the fog clears (denoising), your steps become smaller and more precise.
 
+## Installation
+
+```bash
+pip install devol
+```
+
+Devol's core has a tiny footprint (numpy + pydantic + pydantic-yaml). Optional extras install the dependencies needed for demos and benchmarks:
+
+```bash
+pip install "devol[examples]"   # cartpole, MNIST, two-peaks (adds torch, gymnasium, matplotlib)
+pip install "devol[benchmark]"  # grid-search benchmarks (adds matplotlib, rich, tqdm)
+pip install "devol[dev]"        # contributor tooling (pytest, ruff, mypy, twine)
+pip install "devol[all]"        # everything above
+```
+
 ## Quick Start
 
 ```python

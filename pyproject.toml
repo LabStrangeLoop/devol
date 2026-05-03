@@ -30,14 +30,9 @@ classifiers = [
     "Typing :: Typed",
 ]
 dependencies = [
-    "gymnasium[classic-control]>=1.2.1",
-    "matplotlib>=3.10.7",
     "numpy>=1.26.0",
     "pydantic>=2.0.0",
-    "pydantic-settings>=2.0.0",
     "pydantic-yaml>=1.6.0",
-    "torch>=2.9.0",
-    "torchvision>=0.24.0",
 ]
 
 [project.urls]
@@ -51,15 +46,21 @@ dev = [
     "ruff>=0.1.0",
     "mypy>=1.7.0",
     "pytest>=8.0.0",
+    "twine>=5.0.0",
 ]
 examples = [
     "matplotlib>=3.8.0",
-    "gymnasium>=0.29.0",
+    "gymnasium[classic-control]>=1.2.1",
+    "torch>=2.9.0",
+    "torchvision>=0.24.0",
 ]
 benchmark = [
     "matplotlib>=3.8.0",
     "rich>=13.0.0",
     "tqdm>=4.65.0",
+]
+all = [
+    "devol[dev,examples,benchmark]",
 ]
 
 [project.scripts]
@@ -70,7 +71,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/devol", "examples"]
+packages = ["src/devol"]
 
 [tool.ruff]
 line-length = 120
@@ -88,3 +89,7 @@ warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = true
 files = ["src/devol"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
