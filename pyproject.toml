@@ -2,7 +2,33 @@
 name = "devol"
 version = "0.1.0"
 description = "Diffusion Evolution Algorithm - Evolution through iterative denoising"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.11"
+authors = [
+    {name = "Dario Cazzani", email = "dariocazzani@gmail.com"},
+    {name = "Aleksandr Yeganov", email = "ayeganov@gmail.com"},
+]
+keywords = [
+    "evolution",
+    "optimization",
+    "diffusion",
+    "evolutionary-algorithms",
+    "black-box-optimization",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Operating System :: OS Independent",
+    "Typing :: Typed",
+]
 dependencies = [
     "gymnasium[classic-control]>=1.2.1",
     "matplotlib>=3.10.7",
@@ -10,16 +36,21 @@ dependencies = [
     "pydantic>=2.0.0",
     "pydantic-settings>=2.0.0",
     "pydantic-yaml>=1.6.0",
-    "pytest>=8.4.2",
     "torch>=2.9.0",
     "torchvision>=0.24.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/LabStrangeLoop/devol"
+Repository = "https://github.com/LabStrangeLoop/devol"
+Issues = "https://github.com/LabStrangeLoop/devol/issues"
+Changelog = "https://github.com/LabStrangeLoop/devol/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
 dev = [
     "ruff>=0.1.0",
     "mypy>=1.7.0",
-    "pytest>=7.0.0",
+    "pytest>=8.0.0",
 ]
 examples = [
     "matplotlib>=3.8.0",
