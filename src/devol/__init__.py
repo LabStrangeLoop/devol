@@ -1,5 +1,7 @@
 """Devol: Diffusion Evolution Algorithm."""
 
+from importlib.metadata import PackageNotFoundError, version
+
 from devol.algorithm import DiffusionEvolution
 from devol.config import (
     DiffusionConfig,
@@ -11,7 +13,10 @@ from devol.config import (
     ScheduleType,
 )
 
-__version__ = "0.1.0"
+try:
+    __version__ = version("devol")
+except PackageNotFoundError:  # running from a source checkout without install
+    __version__ = "0.0.0+unknown"
 
 __all__ = [
     "DiffusionEvolution",

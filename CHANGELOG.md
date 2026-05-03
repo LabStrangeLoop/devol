@@ -22,6 +22,8 @@ the set of symbols exported from `devol.__all__`; anything else is internal.
 - `src/devol` is now strictly typed end-to-end (`mypy --strict` clean).
 - Installation section in the README explaining the new extras.
 - README hero visual: 4-panel static figure and animated GIF showing diffusion evolution collapsing noise onto the Rastrigin fitness landscape. Reproducible via `scripts/generate_readme_figure.py`.
+- Automated release pipeline (`.github/workflows/release.yml`): tag-driven publishing via PyPI Trusted Publishers (OIDC), no stored credentials. Prerelease tags (`rc`, `a`, `b`) publish to TestPyPI; final tags publish to PyPI. Both paths require manual approval via GitHub Environments, build a GitHub Release with artifacts attached, and validate that the tag matches `pyproject.toml`.
+- `CONTRIBUTING.md` now documents the release flow.
 
 ### Changed
 
@@ -29,6 +31,7 @@ the set of symbols exported from `devol.__all__`; anything else is internal.
 - Moved `torch`, `torchvision`, `gymnasium`, and `matplotlib` out of required dependencies. Installing `devol` now pulls only `numpy`, `pydantic`, and `pydantic-yaml`; the heavy deps live under the `examples` extra.
 - Dropped unused `pydantic-settings` from dependencies.
 - Wheel contents narrowed to `src/devol` only — `examples/` and `benchmark/` stay in the repo but are no longer shipped.
+- `devol.__version__` is now read dynamically from the installed package metadata (`importlib.metadata.version`), making `pyproject.toml` the single source of truth for the version string.
 
 ### Fixed
 
