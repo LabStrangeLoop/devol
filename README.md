@@ -12,6 +12,10 @@ This reframing gives us an algorithm that naturally transitions from broad explo
 
 **The intuition**: Imagine you're in a foggy room full of people, each standing at a different elevation. You can only see your immediate neighbors through the fog. To find the highest point, you don't just copy the person next to you - you look at everyone nearby, weight them by height, and move toward the weighted average. As the fog clears (denoising), your steps become smaller and more precise.
 
+![Diffusion Evolution on Rastrigin: pure noise collapses onto a constellation of fitness peaks](docs/images/denoising-trajectory.png)
+
+The population starts as pure noise spread across the search space (left). As denoising proceeds, the cloud organizes around the Rastrigin landscape's fitness peaks (center). At the end (right), individuals cluster on the global maximum at the origin *and* on neighbouring high-fitness modes — no explicit niching required. A full animation of the trajectory is [here](docs/images/denoising-trajectory.gif).
+
 ## Installation
 
 ```bash

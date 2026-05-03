@@ -21,6 +21,7 @@ the set of symbols exported from `devol.__all__`; anything else is internal.
 - `examples`, `benchmark`, `dev`, and `all` optional dependency groups.
 - `src/devol` is now strictly typed end-to-end (`mypy --strict` clean).
 - Installation section in the README explaining the new extras.
+- README hero visual: 4-panel static figure and animated GIF showing diffusion evolution collapsing noise onto the Rastrigin fitness landscape. Reproducible via `scripts/generate_readme_figure.py`.
 
 ### Changed
 

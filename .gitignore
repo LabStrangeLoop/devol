@@ -217,6 +217,10 @@ __marimo__/
 
 *.png
 *.gif
+# Documentation assets are tracked; everything else (stray plots, benchmark
+# output) stays ignored by the rules above.
+!docs/images/*.png
+!docs/images/*.gif
 
 data/
 mnist_checkpoints/
